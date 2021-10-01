@@ -305,6 +305,30 @@ main() {
 
   need_pkg nodejs $MONGODB apt-transport-https haveged build-essential yq
   need_pkg bigbluebutton
+
+  # Disable ipv6 for nginx
+  sed -r -i 's/(^.*listen.*\[\:\:\].*$)/\# \1/' /etc/nginx/sites-available/default
+  sed -r -i 's/(^.*listen.*\[\:\:\].*$)/\# \1/' /etc/nginx/sites-available/bigbluebutton
+
+  # Disable ipv6 for redis
+  sed -r -i 's/^bind 127.0.0.1 ::1$/\bind 127.0.0.1/' /etc/redis/redis.conf
+
+  # Disable ipv6 for FreeSWITCH
+  sed -r -i 's/<param name\=\"listen\-ip\" value\=\"\:\:\"\/>/<param name\=\"listen\-ip\" value\=\"127\.0\.0\.1\"\/>/' \
+      /opt/freeswitch/etc/freeswitch/autoload_configs/event_socket.conf.xml
+
+  mv /opt/freeswitch/etc/freeswitch/sip_profiles/internal-ipv6.xml /opt/freeswitch/etc/freeswitch/sip_profiles/internal-ipv6.xml_
+  mv /opt/freeswitch/etc/freeswitch/sip_profiles/external-ipv6.xml /opt/freeswitch/etc/freeswitch/sip_profiles/external-ipv6.xml_
+
+  # Add "Restart=on-failure" to
+  #  - /usr/lib/systemd/system/bbb-html5-frontend@.service
+  #  - /usr/lib/systemd/system/bbb-html5-backend@.service
+  sed -i '/^RestartSec=10$/a Restart=on-failure' /usr/lib/systemd/system/bbb-html5-frontend@.service
+  sed -i '/^RestartSec=10$/a Restart=on-failure' /usr/lib/systemd/system/bbb-html5-backend@.service
+
+  # Restart services
+  systemctl restart freeswitch.service
+
   need_pkg bbb-html5
 
   if [ -f /usr/share/bbb-web/WEB-INF/classes/bigbluebutton.properties ]; then
@@ -842,7 +866,7 @@ install_ssl() {
 server_tokens off;
 server {
   listen 80;
-  listen [::]:80;
+  # listen [::]:80;
   server_name $HOST;
 
   access_log  /var/log/nginx/bigbluebutton.access.log;
@@ -877,7 +901,7 @@ server_tokens off;
 
 server {
   listen 80;
-  listen [::]:80;
+  # listen [::]:80;
   server_name $HOST;
   
   return 301 https://\$server_name\$request_uri; #redirect HTTP to HTTPS
@@ -885,7 +909,7 @@ server {
 }
 server {
   listen 443 ssl http2;
-  listen [::]:443 ssl http2;
+  # listen [::]:443 ssl http2;
   server_name $HOST;
 
     ssl_certificate /etc/letsencrypt/live/$HOST/fullchain.pem;
