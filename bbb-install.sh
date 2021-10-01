@@ -326,6 +326,9 @@ main() {
   sed -i '/^RestartSec=10$/a Restart=on-failure' /usr/lib/systemd/system/bbb-html5-frontend@.service
   sed -i '/^RestartSec=10$/a Restart=on-failure' /usr/lib/systemd/system/bbb-html5-backend@.service
 
+  # Reload service files
+  systemctl daemon-reload
+
   # Restart services
   systemctl restart freeswitch.service
 
